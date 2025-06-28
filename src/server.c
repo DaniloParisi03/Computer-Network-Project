@@ -2,7 +2,7 @@
 
 
 //data structure usate dal server
-THEME temi[THEME_MAX]; 
+THEME temi[2]; 
 PLAYER* giocatori = NULL;
 int NUM_GIOCATORI  = 0;
 pthread_mutex_t mutex_giocatori;
@@ -15,6 +15,7 @@ void th_client(void *arg){
 
 int main(){
     //dichiaro il thread
+    
     int *arg;
     pthread_t thread_player;
     pthread_mutex_init(&mutex_giocatori,NULL);
