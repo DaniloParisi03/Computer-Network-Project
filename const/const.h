@@ -8,7 +8,7 @@
 #define NAME_MAX 20 
 
 //lunghezza domande
-#define Q_MAX 100 
+#define Q_MAX 100
 
 //lunghezza risposte
 #define A_MAX 30 
@@ -21,6 +21,6 @@
 #define true 1
 
 
-#define THEME_PATH "../txt/temi.txt"
+#define THEME_PATH "/home/danilo/reti_pr/progetto-reti-informatiche/txt/temi.txt"
 #define Q_PATH "../txt/domande.txt"
 #define A_PATH "../txt/risposte.txt"

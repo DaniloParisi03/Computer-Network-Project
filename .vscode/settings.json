@@ -1,0 +1,19 @@
+{
+    "files.associations": {
+        "array": "c",
+        "bitset": "c",
+        "buffer": "c",
+        "socket": "c",
+        "string_view": "c",
+        "slist": "c",
+        "initializer_list": "c",
+        "ranges": "c",
+        "span": "c",
+        "regex": "c",
+        "utility": "c",
+        "valarray": "c",
+        "serverlib.h": "c",
+        "typeindex": "c",
+        "typeinfo": "c"
+    }
+}

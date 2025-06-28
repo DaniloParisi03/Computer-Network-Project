@@ -5,11 +5,11 @@
 typedef struct theme THEME;
 typedef struct player PLAYER;
 
-typedef struct question QUESTION; 
+typedef struct node NODE; 
 
-struct question{
+struct node{
     char testo[Q_MAX];
-    QUESTION* next;
+    NODE* next;
 };
 
 struct score{
@@ -28,22 +28,22 @@ struct player{
 
 struct theme{
     //nome tema
-    const char* name;
+    char* name;
     //numero attuale di domande per tema
     int NUM_DOMANDE;
     //linked list delle domande
-    QUESTION* lista_domande;
-    QUESTION* lista_risposte;
+    NODE* lista_domande;
+    NODE* lista_risposte;
     //atto per gli accessi in classifica
     pthread_mutex_t mutex;
 };
 
 //carica le domande dal file di testo 1 ok, 0 errore
 
-bool caricaDaFile(FILE* fd, QUESTION* lista);
+bool caricaDaFile(FILE* fd, NODE* lista);
 
-bool caricaDomande(int num_tema, QUESTION* lista_domande);
-bool caricaRisposte(int num_tema, QUESTION* lista_domande);
+bool caricaDomande(size_t , THEME *);
+bool caricaRisposte(size_t num_tema, THEME* lista_domande);
 
 bool caricaTemi(THEME* temi);
 
