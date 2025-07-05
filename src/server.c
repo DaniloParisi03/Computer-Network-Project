@@ -3,19 +3,57 @@
 
 //data structure usate dal server
 THEME temi[2]; 
-PLAYER* giocatori = NULL;
-int NUM_GIOCATORI  = 0;
+PLAYER* lista_player = NULL;
+int num_giocatori  = 0;
 pthread_mutex_t mutex_giocatori;
 
 
-void th_client(void *arg){
+void* th_client(void *arg){
 
+    //informazioni da scambiare col client
+    int client_sock = *(int*)(arg);
+    char buffer[Q_MAX];
+    int ret;
+    
+    //plyer associato al client
+    PLAYER* new_player;
+    int tema_scelto = -1;
+    send(client_sock, buffer, sizeof(buffer), 0);
+
+
+    //comandi mandati dal client
+    do
+    {
+        if((ret = recv(client_sock,(void*)buffer, NAME_MAX, 0))<= 0)
+            //gestirone errore;
+
+        //stringa vuota    
+        if(strlen(buffer) == 0)
+            continue;
+        if(strcmp("show score", buffer) == 0)
+            {
+                for (int i = 0; i < NUM_THEME; i++)
+                {
+                    stampaOrdinato(temi[i].score_root);
+                }
+            continue;
+            }
+        // a questo punto nel buffer sarà presente il nome
+        if(trovaUtenteDalNome(buffer,lista_player,&mutex_giocatori) == 0);
+            
+    } while (true);
+    
+
+    free(arg);
+    return NULL;
 }
 
 
 int main(){
+
     //dichiaro il thread
-    
+    caricaTemi(temi);
+    stampa_menu(temi, lista_player, num_giocatori, &mutex_giocatori);
     int *arg;
     pthread_t thread_player;
     pthread_mutex_init(&mutex_giocatori,NULL);
@@ -25,6 +63,7 @@ int main(){
     struct sockaddr_in my_addr, client_addr; 
 
     //init temi
+    caricaTemi(temi);
 
     if((serv_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
@@ -52,9 +91,10 @@ int main(){
         close(serv_sock);
         exit(EXIT_FAILURE);
     }
-    printf("Server in ascolto\n");
 
-    stampa_menu(temi, giocatori, NUM_GIOCATORI, &mutex_giocatori);
+    printf("### Server in ascolto ###\n");
+
+    stampa_menu(temi, lista_player, num_giocatori, &mutex_giocatori);
 
     while(1){
         socklen_t len_a = sizeof(client_addr);
@@ -76,6 +116,7 @@ int main(){
             perror("Errore: pthread_create() fallita\n");
             close(new_sock);
         }
+
 
 
     }

@@ -3,40 +3,52 @@
 
 
 typedef struct theme THEME;
-typedef struct player PLAYER;
-
 typedef struct node NODE; 
+typedef struct node_tree TNODE;
+typedef struct player PLAYER;
 
 struct node{
     char testo[Q_MAX];
     NODE* next;
 };
 
-struct score{
-    PLAYER *p;
-    int punteggio;
+struct node_tree
+{ 
+    int punteggio; 
+    PLAYER* giocatore;
+    TNODE*left; 
+    TNODE*right;
 };
 
 
 struct player{
+
     char name[NAME_MAX];
-    bool active;
-    bool temi_iniziati[THEME_MAX];
-    bool temi_finiti[THEME_MAX];
+    bool attivo;
+    bool temi_iniziati[NUM_THEME];
+    bool temi_finiti[NUM_THEME];
     PLAYER* next;
+
 };
 
 struct theme{
+
     //nome tema
     char* name;
     //numero attuale di domande per tema
     int NUM_DOMANDE;
+
     //linked list delle domande
     NODE* lista_domande;
     NODE* lista_risposte;
+
+    //albero ordinato di ricerca per salvare i dati
+    TNODE* score_root;
+
     //atto per gli accessi in classifica
     pthread_mutex_t mutex;
 };
+
 
 //carica le domande dal file di testo 1 ok, 0 errore
 
@@ -52,11 +64,21 @@ bool caricaTemi(THEME* temi);
 bool aggiungiDomanda(int num_tema, char* domanda);
 
 void stampa_menu(THEME *lista_temi, PLAYER* giocatori, int giocatore_attuali ,pthread_mutex_t* m );
+
 // funzioni per la gestione dei giocatori
 
-bool cercaGiocatore(char* nome, PLAYER* lista_g, pthread_mutex_t* m);
+bool trovaUtenteDalNome(char* nome, PLAYER* lista_g, pthread_mutex_t* m);
+void aggiungiGiocatore(char* giocatore, PLAYER** lista_g, pthread_mutex_t* m);
+PLAYER* mallocGiocatore(char* nome);
 
-int inserisciGiocatore(char* nome,PLAYER** lista_g, int* giocatore_attuali, pthread_mutex_t* m );
-void aggiornaPunteggio(char* nome, int num_tema, THEME *lista_temi);
-int ord(const void* a, const void* b);
-PLAYER creaGiocatore();
+//gestione tramite albero di ricerca per una question di complessità, ovvero 
+//ordinandno ogni volta un array complessità n*log(n), 
+//così la: 2*O(log(n)) + O(n) e la stampa sarà O(n)
+
+TNODE* creaNodo(PLAYER* giocatore, int punteggio);
+TNODE* inserisciPlayer(TNODE* root, PLAYER *giocatore, int punteggio);
+
+
+TNODE* rimuoviPlayer(TNODE *node, PLAYER *giocatore, int punteggio);
+
+void stampaOrdinato(TNODE* root);

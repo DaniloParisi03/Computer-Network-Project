@@ -4,29 +4,43 @@ OBJDIR = bin
 SRCSERVER = src/server.c
 SRCCLIENT = src/client.c
 
-# File oggetto
-OBJSERVER = bin/server.o
-OBJCLIENT= bin/client.o
 
+#liberie
+SRCLIBCLIENT= src/clientlib.c
+SRCLIBSERVER= src/serverlib.c
+
+# File oggetto
+OBJSERVER = $(OBJDIR)/server.o
+OBJCLIENT= $(OBJDIR)/client.o
+
+OBJLIBSERVER = $(OBJDIR)/serverlib.o
+OBJLIBCLIENT = $(OBJDIR)/clienlib.o
 
 # Compila tutto (default)
-make: server client
+all: server client
 
 # Regola per compilare il file oggetto del server
-$(OBJSERVER): $(SRCSERVER)
-	gcc -c $(SRCSERVER) -o $(OBJSERVER)
 
-server: $(OBJSERVER)
-	gcc $(OBJSERVER) -o server
+$(OBJSERVER): $(SRCSERVER)
+	gcc -c $< -o $@
+$(OBJLIBSERVER): $(SRCLIBSERVER)	
+	gcc -c $< -o $@
+
+server: $(OBJSERVER) $(OBJLIBSERVER)
+	gcc $(OBJSERVER) $(OBJLIBSERVER) -o server
+
 
 $(OBJCLIENT): $(SRCCLIENT)
 	gcc -c $(SRCCLIENT) -o $(OBJCLIENT)
 
-client: $(OBJCLIENT)
-	gcc $(OBJCLIENT) -o client
+$(OBJLIBCLIENT): $(SRCCLIENT)	
+	gcc -c $(SRCLIBCLIENT) -o $(OBJLIBCLIENT)
+
+client: $(OBJCLIENT) $(OBJLIBCLIENT)
+	gcc $(OBJCLIENT) $(LIBCLIENT) -o client
 
 
 
 # Pulisce i file generati
 cls:
-	rm -f $(OBJSERVER) server $(OBJCLIENT) client
+	rm -f $(OBJDIR)/*.o server client

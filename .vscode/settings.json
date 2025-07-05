@@ -14,6 +14,8 @@
         "valarray": "c",
         "serverlib.h": "c",
         "typeindex": "c",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "const.h": "c",
+        "all.h": "c"
     }
 }
