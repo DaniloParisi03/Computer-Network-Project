@@ -146,7 +146,6 @@ bool caricaTemi(THEME *temi)
     return 1;
 }
 
-
 //gestione albero degli score
 
 TNODE* creaNodo(PLAYER* giocatore, int punteggio){
@@ -310,5 +309,37 @@ void stampa_menu(THEME* lista_temi,PLAYER* giocatori, int giocatore_attuali, pth
 
     }
     
+}
 
+int totStrTemiSize(THEME* temi){
+    int size_all = 0;
+    char buffer[100];
+
+    for(int i = 0 ; i < NUM_THEME; i++){
+        sprintf(buffer, "\n%d - ", (i+1) );
+        size_all+= strlen(temi[i].name) + strlen(buffer);
+    } 
+
+    return size_all;
  }
+
+ char* concatenaStrTemi(THEME* temi, const int size_all){
+
+    char buffer[100];
+    char* str_concatenata = (char*)malloc(size_all);
+
+    for(int i = 0 ; i < NUM_THEME; i++){
+
+        sprintf(buffer, "\n%d - ", (i+1));
+        
+        if(i==0)
+            strcpy(str_concatenata, buffer);
+        
+        else
+            strcat(str_concatenata, buffer);
+        strcat(str_concatenata,temi[i].name);
+
+    }
+
+    return str_concatenata;
+}

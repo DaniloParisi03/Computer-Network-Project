@@ -1,32 +1,59 @@
 #include "../include/all.h"
+#include "clientlib.c"
+
+PLAYER_STATUS my_status = STARTPAGE;
 
 int main(int argc,const char *argv[]) 
 {
-    int sockD = socket(AF_INET, SOCK_STREAM, 0);
+
+    int sock , porta;
+    sock = socket(AF_INET, SOCK_STREAM, 0);
     //porta di default
-    int porta = 3456;
-    struct sockaddr_in servAddr; 
+    porta = 3456;
+    struct sockaddr_in serv_addr; 
     
     if (argc == 2) {
         porta = atoi(argv[1]);
     }
 
-    servAddr.sin_family = AF_INET;
-    servAddr.sin_port = htons(porta);
-    servAddr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(porta);
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
 
-    int connectStatus  = connect(sockD, (struct sockaddr*)&servAddr,
-                  sizeof(servAddr));
-
-    if (connectStatus == -1) {
+    if (connect(sock, (struct sockaddr*)&serv_addr,sizeof(serv_addr)) == -1) {
         printf("Error...\n");
+        exit(-1);
     }
 
-    else {
-        char strData[255];
-        recv(sockD, strData, sizeof(strData), 0);
-        printf("Message: %s\n", strData);
-    }
+    //char strData[255];
+    //recv(sock, strData, sizeof(strData), 0);
+    //printf("Message: %s\n", strData);
 
+    printMenu();
+    while (1)
+    {
+        
+        switch (my_status)
+        {
+        case STARTPAGE:
+            my_status = sceltaMenu();
+            break;
+
+        case SCELTANOME:
+            my_status = richiediNome(sock);
+            break;
+
+        case ATTIVO:
+            my_status = sceltaQuiz(sock);
+            break;
+
+        case ENDQUIZ:
+            /* code */
+            break;
+        default:
+            break;
+        }
+    }
+    
     return 0;
 }

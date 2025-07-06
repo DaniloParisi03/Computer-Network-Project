@@ -1,0 +1,6 @@
+Trivia Quiz 
+++++++++++++++ 
+Menù:
+1 - Comincia una sessione di Trivia
+2 - Esci
++++++++++++++++

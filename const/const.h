@@ -15,7 +15,7 @@
 
 //dimensione del buffer utilizzato per show score
 #define SCOREBUFF_SIZE 1000 
-
+#define NAME_RESULT 20
 #define bool _Bool
 #define false 0
 #define true 1

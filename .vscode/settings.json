@@ -16,6 +16,7 @@
         "typeindex": "c",
         "typeinfo": "c",
         "const.h": "c",
-        "all.h": "c"
+        "all.h": "c",
+        "clientlib.h": "c"
     }
 }

@@ -31,6 +31,7 @@ struct player{
 
 };
 
+
 struct theme{
 
     //nome tema
@@ -82,3 +83,7 @@ TNODE* inserisciPlayer(TNODE* root, PLAYER *giocatore, int punteggio);
 TNODE* rimuoviPlayer(TNODE *node, PLAYER *giocatore, int punteggio);
 
 void stampaOrdinato(TNODE* root);
+
+int totStrTemiSize(THEME* temi);
+char* concatenaStrTemi(THEME* temi, const int size_all);
+char* concatenaStrClassifica(THEME* temi, const int size_all);

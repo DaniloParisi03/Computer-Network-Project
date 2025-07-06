@@ -15,31 +15,40 @@ void* th_client(void *arg){
     char buffer[Q_MAX];
     int ret;
     
-    //plyer associato al client
+    //player associato al client
     PLAYER* new_player;
     int tema_scelto = -1;
-    send(client_sock, buffer, sizeof(buffer), 0);
 
+    //se l'utente è attivo invia temi
+    int str_temi_len = totStrTemiSize(temi);
+    char* str_temi = concatenaStrTemi(temi, str_temi_len);
+
+    printf("%s\n", str_temi);
+    printf("dimensione %i\n", str_temi_len);
 
     //comandi mandati dal client
     do
     {
         if((ret = recv(client_sock,(void*)buffer, NAME_MAX, 0))<= 0)
-            //gestirone errore;
+            continue;
+
 
         //stringa vuota    
         if(strlen(buffer) == 0)
             continue;
-        if(strcmp("show score", buffer) == 0)
+
+        else if(strcmp("show score", buffer) == 0)
             {
-                for (int i = 0; i < NUM_THEME; i++)
-                {
-                    stampaOrdinato(temi[i].score_root);
-                }
-            continue;
+                //invia punteggi
             }
-        // a questo punto nel buffer sarà presente il nome
-        if(trovaUtenteDalNome(buffer,lista_player,&mutex_giocatori) == 0);
+        else if(strcmp("1", buffer) == 0){
+            if(trovaUtenteDalNome(buffer,lista_player,&mutex_giocatori) == 0);
+
+            //sceglie nome
+            //s'è corretto inivia stringhe
+
+        }
+        
             
     } while (true);
     
@@ -52,18 +61,18 @@ void* th_client(void *arg){
 int main(){
 
     //dichiaro il thread
-    caricaTemi(temi);
-    stampa_menu(temi, lista_player, num_giocatori, &mutex_giocatori);
+   
     int *arg;
     pthread_t thread_player;
     pthread_mutex_init(&mutex_giocatori,NULL);
-
+    
     //descrittori di socket e indirizzi degli stessi
     int serv_sock, new_sock;
     struct sockaddr_in my_addr, client_addr; 
-
+    
     //init temi
     caricaTemi(temi);
+    stampa_menu(temi, lista_player, num_giocatori, &mutex_giocatori);
 
     if((serv_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
@@ -120,6 +129,5 @@ int main(){
 
 
     }
-
     return 0;
 }
