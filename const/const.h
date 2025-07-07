@@ -16,6 +16,13 @@
 //dimensione del buffer utilizzato per show score
 #define SCOREBUFF_SIZE 1000 
 #define NAME_RESULT 20
+
+//ack e nack sul nome scelta dal client
+#define ACK_NAME "Risposta corretta"
+#define NACK_NAME "Risposta errata"
+
+#define EOQ "domande terminate"
+
 #define bool _Bool
 #define false 0
 #define true 1

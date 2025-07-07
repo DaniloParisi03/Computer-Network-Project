@@ -20,7 +20,7 @@ int main(int argc,const char *argv[])
     serv_addr.sin_port = htons(porta);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
 
-    if (connect(sock, (struct sockaddr*)&serv_addr,sizeof(serv_addr)) == -1) {
+    if(connect(sock, (struct sockaddr*)&serv_addr,sizeof(serv_addr)) == -1) {
         printf("Error...\n");
         exit(-1);
     }
@@ -44,11 +44,12 @@ int main(int argc,const char *argv[])
             break;
 
         case ATTIVO:
-            my_status = sceltaQuiz(sock);
+            my_status = quiz(sock);
             break;
 
         case ENDQUIZ:
             /* code */
+            return 0;
             break;
         default:
             break;

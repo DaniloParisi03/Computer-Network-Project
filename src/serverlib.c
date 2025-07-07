@@ -1,5 +1,20 @@
 #include "../include/serverlib.h"
 
+void trimStr(char* str){
+    char* temp = str;
+    do {
+        while (*temp == ' ') {
+            ++temp;
+        }
+    } while (*str++ = *temp++);
+}
+void strMinuscolo(char* str){
+    for(int i = 0; str[i]; i++){
+        if(str[i] == '\n')
+            continue;
+        str[i] = tolower(str[i]);
+    }
+}
 
 /// @brief crea una linkedlist di nodi, in ogni nodo è salvata una stringa
 /// @param fd file da cui salvare le tringhe
@@ -110,8 +125,7 @@ bool caricaRisposte(size_t num_tema, THEME *tema)
 /// @brief funzione che carica i nomi dei temi, per ogni tema vengono salvate in apposite strutture le domande e le risposte
 /// @param temi array di temi attualmente in corso
 /// @return risultato dell'operazione
-bool caricaTemi(THEME *temi)
-{
+bool caricaTemi(THEME *temi){
     FILE* fd  = fopen(THEME_PATH,"r");
     char tema_nome[Q_MAX];
 
@@ -253,7 +267,7 @@ PLAYER* mallocGiocatore(char* nome){
 
     for(int i = 0; i < NUM_THEME; i++){
         new_node->temi_finiti[i] = false;
-        new_node->temi_iniziati[i] = false;
+        new_node->temi_iniziati[i] = -1;
     }
 
     new_node->next = NULL;
@@ -278,7 +292,7 @@ bool trovaUtenteDalNome(char* nomeGiocatore, PLAYER* lista_g, pthread_mutex_t* m
     return false;
 }
 
-void aggiungiGiocatore(char* nome, PLAYER** lista_g, pthread_mutex_t* m){
+PLAYER* aggiungiGiocatore(char* nome, PLAYER** lista_g, pthread_mutex_t* m){
     
     PLAYER* new_node = mallocGiocatore(nome);
     pthread_mutex_lock(m);
@@ -287,6 +301,7 @@ void aggiungiGiocatore(char* nome, PLAYER** lista_g, pthread_mutex_t* m){
     *(lista_g) = new_node;
 
     pthread_mutex_unlock(m);
+    return new_node;
 
 }
 void stampa_menu(THEME* lista_temi,PLAYER* giocatori, int giocatore_attuali, pthread_mutex_t *m)
@@ -323,13 +338,15 @@ int totStrTemiSize(THEME* temi){
     return size_all;
  }
 
- char* concatenaStrTemi(THEME* temi, const int size_all){
+ char* concatenaStrTemi(THEME* temi, const int size_all, PLAYER* client){
 
     char buffer[100];
     char* str_concatenata = (char*)malloc(size_all);
 
     for(int i = 0 ; i < NUM_THEME; i++){
 
+        if(client->temi_finiti[i] == true)
+            continue;;
         sprintf(buffer, "\n%d - ", (i+1));
         
         if(i==0)
@@ -342,4 +359,4 @@ int totStrTemiSize(THEME* temi){
     }
 
     return str_concatenata;
-}
+} 

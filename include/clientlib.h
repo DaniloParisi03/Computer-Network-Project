@@ -7,6 +7,5 @@ enum StatiUtente{STARTPAGE, SCELTANOME, ATTIVO, SHOWSCORE, ENDQUIZ};
 void printMenu();
 PLAYER_STATUS sceltaMenu();
 PLAYER_STATUS richiediNome(const int);
-PLAYER_STATUS sceltaQuiz(const int);
+PLAYER_STATUS quiz(const int sock);
 void showScore();
-PLAYER_STATUS endQuiz();
