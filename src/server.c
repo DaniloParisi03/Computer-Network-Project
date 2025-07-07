@@ -22,6 +22,7 @@ bool isEndQuiz(char* str){
     //elimina utente 
     return false;
 }
+
 void* th_client(void *arg){
 
     //informazioni da scambiare col client
@@ -35,10 +36,10 @@ void* th_client(void *arg){
     
     //player associato al client
     PLAYER* new_player;
-    uint32_t tema_scelto = -1;
+    uint32_t tema_scelto = 0;
 
     //se l'utente è attivo invia temi
-    uint32_t str_temi_len;
+    uint32_t str_temi_len, str_nome_tema_len;
     char* str_temi;
 
     
@@ -78,44 +79,24 @@ void* th_client(void *arg){
 
     //il serven invia prima la lunghezza della stringa e poi la stringa stessa
     do{
-        //scelta temi
+        //invia lista temi iniziale
         send(client_sock, &str_temi_len, sizeof(uint32_t), 0);
         send(client_sock, str_temi, str_temi_len, 0);
+
         //client manda tema scelto
         size_t byte_ricevuti;
 
         byte_ricevuti = recv(client_sock, &tema_scelto, sizeof(uint32_t), 0);
         tema_scelto = ntohl(tema_scelto)-1;
-
-
-        if (byte_ricevuti <= 0) {
-            printf("Connessione chiusa dal client\n");
-            break;
-        }
-
-        //l'utente sceglie il tema e gli verrano mostrate le domande  di esso
-
-        new_player->temi_iniziati[tema_scelto] = 0;
-
-        //inserisciPlayer(temi[tema_scelto].score_root, new_player, 0);
-        send(client_sock, temi[tema_scelto].name, NAME_MAX, 0);
-
-        for (NODE* domanda = temi[tema_scelto].lista_domande; domanda; domanda = domanda->next)
-        {
-            printf("\n%s", domanda->testo);
-            send(client_sock, domanda->testo, strlen(domanda->testo), 0);
-            //riposta
-            /*byte_ricevuti = recv(client_sock, buffer_risposta, A_MAX, 0);
-        
-            if (byte_ricevuti <= 0) {
-                printf("Connessione chiusa dal client\n");
-                break;
-            }
-            buffer_risposta[byte_ricevuti] = '\0';*/
-
-        }
-        //comunica al client che le domande per il tema scelto sono terminate
-        //send(client_sock, EOQ, strlen(EOQ), 0);
+        // if (byte_ricevuti <= 0) {
+            //     printf("Connessione chiusa dal client\n");
+            //     break;
+            // 
+            
+        uint32_t len_tema = htonl(strlen(temi[tema_scelto].name));
+        //invia nome tema
+        send(client_sock, &len_tema, sizeof(uint32_t), 0);
+        send(client_sock, temi[tema_scelto].name, str_temi_len, 0);
 
         
 

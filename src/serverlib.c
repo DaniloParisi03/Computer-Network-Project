@@ -136,8 +136,9 @@ bool caricaTemi(THEME *temi){
         return 1;
     }
     
-    for(size_t i= 0; i< NUM_THEME && fgets(tema_nome, sizeof(tema_nome), fd)!=NULL; i++) {
-        //rimzione ritorno carattere speciale di ritorno a capo
+    for(size_t i= 0; i< NUM_THEME && fgets(tema_nome, sizeof(tema_nome), fd) != NULL; i++) {
+        
+        //rimozione carattere new line con ritorno a capo
         tema_nome[strcspn(tema_nome, "\n")] = '\0';
 
         new_tema = &temi[i];
@@ -150,10 +151,7 @@ bool caricaTemi(THEME *temi){
         }
         
         caricaDomande(i,new_tema);
-        // printLista(new_tema->lista_domande);
-
         caricaRisposte(i,new_tema);
-        // printLista(new_tema->lista_risposte);
     }
     
     fclose(fd);
@@ -354,9 +352,12 @@ int totStrTemiSize(THEME* temi){
         
         else
             strcat(str_concatenata, buffer);
-        strcat(str_concatenata,temi[i].name);
+        strcat(str_concatenata, temi[i].name);
 
     }
 
     return str_concatenata;
 } 
+
+
+// comunicazione client

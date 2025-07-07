@@ -73,20 +73,17 @@ PLAYER_STATUS richiediNome(const int sock){
 
 bool recvTemi(const int sock){
 
+    char* str_temi;
     uint32_t size_buffer_temi;
     ssize_t byte_ricevuti = 0;
-    char* str_temi;
 
     byte_ricevuti = recv(sock, &size_buffer_temi,sizeof(uint32_t), 0);
-
     size_buffer_temi = ntohl(size_buffer_temi);
-    str_temi = (char*)malloc(size_buffer_temi);
 
+    str_temi = (char*)malloc(size_buffer_temi);
+    
     byte_ricevuti = recv(sock, str_temi, size_buffer_temi, 0);
-    if (byte_ricevuti <= 0) {
-            printf("Connessione chiusa dal server\n");
-            return false;
-        }
+    
     //carattere di teminazione
     str_temi[byte_ricevuti] = '\0';
 
@@ -101,29 +98,36 @@ bool recvTemi(const int sock){
 }
 void sendTemaScelto(const int sock){
 
-    uint32_t tema_in;
+    int tema_in;
     printf("La tua scelta:\n\n");
     
     do{
         scanf("%d", &tema_in);
     }while (tema_in <= 0 || tema_in > NUM_THEME);
 
-    tema_in=htonl(tema_in);
+    tema_in = htonl(tema_in);
     send(sock, &tema_in, sizeof(uint32_t), 0);
-
 }
 
 void recvNomeTemaScelto(const int sock){
-    char nome_tema[NAME_MAX];
-    uint32_t byte_ricevuti;
-    byte_ricevuti = recv(sock, nome_tema, NAME_MAX, 0);
+    uint32_t num;
+    ssize_t byte_ricevuti = 0;
+    char* str_tema;
+
+    byte_ricevuti = recv(sock, &num, sizeof(uint32_t), 0);
+
+    num = ntohl(num);
+    printf("\n%d\n", num);
+    str_tema = (char*)malloc(sizeof(char)*num+1);
+
+    byte_ricevuti = recv(sock, str_tema, num, 0);
     if (byte_ricevuti <= 0) {
             printf("Connessione chiusa dal server\n");
             return;
         }
     //carattere di teminazione
-    nome_tema[byte_ricevuti] = '\0';
-    printf("Quiz - %s\n",nome_tema);
+    str_tema[byte_ricevuti] = '\0';
+    printf("Quiz - %s\n",str_tema);
     printf("++++++++++++++++++++++++++++++\n");
 
 }
@@ -140,25 +144,23 @@ PLAYER_STATUS quiz(const int sock){
     // do
     // {
         sendTemaScelto(sock);
-
         recvNomeTemaScelto(sock);
-        do
-        {
-            byte_ricevuti = recv(sock, domanda, Q_MAX, 0);
-            if (byte_ricevuti <= 0) {
-                    printf("Connessione chiusa dal server\n");
-                    return false;
-                }
-            //carattere di teminazione
-            domanda[byte_ricevuti] = '\0';
-            if(strcmp(domanda,EOQ) == 0)
-                break;;
-            printf("%s\n\n", domanda);
-        } while (true);
+        // do
+        // {
+        //     byte_ricevuti = recv(sock, domanda, Q_MAX, 0);
+        //     if (byte_ricevuti <= 0) {
+        //             printf("Connessione chiusa dal server\n");
+        //             return false;
+        //         }
+        //     //carattere di teminazione
+        //     domanda[byte_ricevuti] = '\0';
+        //     if(strcmp(domanda,EOQ) == 0)
+        //         break;;
+        //     printf("%s\n\n", domanda);
+        // } while (true);
 
         // recvTemi(sock);
     // } while (true);
     
     return ENDQUIZ;
-
 }

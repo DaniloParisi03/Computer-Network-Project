@@ -8,4 +8,5 @@ void printMenu();
 PLAYER_STATUS sceltaMenu();
 PLAYER_STATUS richiediNome(const int);
 PLAYER_STATUS quiz(const int sock);
+void recvNomeTemaScelto(const int sock);
 void showScore();
