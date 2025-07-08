@@ -4,8 +4,8 @@
 //data structure usate dal server
 THEME temi[2]; 
 PLAYER* lista_player = NULL;
-int num_giocatori  = 0;
 pthread_mutex_t mutex_giocatori;
+int num_giocatori  = 0;
 
 bool isShowScore(char* str){
     // strMinuscolo(str);
@@ -36,7 +36,8 @@ void* th_client(void *arg){
     
     //player associato al client
     PLAYER* new_player;
-    uint32_t tema_scelto = 0;
+    THEME* tema_scelto;
+    uint32_t index_tema = 0;
 
     //se l'utente è attivo invia temi
     uint32_t str_temi_len, str_nome_tema_len;
@@ -61,60 +62,106 @@ void* th_client(void *arg){
 
         strMinuscolo(buffer_nome);
         printf("\nUtente propone %s\n", buffer_nome);
+
         if(trovaUtenteDalNome(buffer_nome,lista_player, &mutex_giocatori) == false){
             //invio ack per indicare la correttezza del nome
             send(client_sock, ACK_NAME, strlen(ACK_NAME), 0);
-            new_player = aggiungiGiocatore(buffer_nome, &lista_player, &mutex_giocatori);
+            new_player = aggiungiGiocatore(buffer_nome, &lista_player, &num_giocatori, &mutex_giocatori);
             break;
         }
+
         else if(trovaUtenteDalNome(buffer_nome,lista_player, &mutex_giocatori) == true)
             send(client_sock, NACK_NAME, strlen(NACK_NAME), 0);
     } 
     while (true);
 
-    
-    str_temi_len = htonl(totStrTemiSize(temi));
-    str_temi = concatenaStrTemi(temi, str_temi_len, new_player);
-    printf("\nServe invia %s\n", str_temi);
+    //aggiorno numero dei giocatori
+    num_giocatori++;
 
-    //il serven invia prima la lunghezza della stringa e poi la stringa stessa
-    do{
-        //invia lista temi iniziale
-        send(client_sock, &str_temi_len, sizeof(uint32_t), 0);
-        send(client_sock, str_temi, str_temi_len, 0);
+    //invio dei nomi dei temi
+    for(int i = 0; i < NUM_THEME; i++)
+        send(client_sock, (void*)temi[i].name, NAME_MAX, MSG_NOSIGNAL);
 
-        //client manda tema scelto
-        size_t byte_ricevuti;
-
-        byte_ricevuti = recv(client_sock, &tema_scelto, sizeof(uint32_t), 0);
-        tema_scelto = ntohl(tema_scelto)-1;
-        // if (byte_ricevuti <= 0) {
-            //     printf("Connessione chiusa dal client\n");
-            //     break;
-            // 
-            
-        uint32_t len_tema = htonl(strlen(temi[tema_scelto].name));
-        //invia nome tema
-        send(client_sock, &len_tema, sizeof(uint32_t), 0);
-        send(client_sock, temi[tema_scelto].name, str_temi_len, 0);
-
+   
+    do
+    {
+        ssize_t bytes_ricevuti = recv(client_sock, &index_tema, sizeof(index_tema), 0);
+        if (bytes_ricevuti != sizeof(index_tema)) {
+            perror("recv non funzionante");
+            exit(EXIT_FAILURE);
+        }
         
+        index_tema = ntohl(index_tema)-1;
+        tema_scelto = &temi[index_tema];
+
+        printf("Tema ricevuto dal client: %d\n", index_tema);
+
+        send(client_sock, tema_scelto->name, strlen(tema_scelto->name), MSG_NOSIGNAL);
+
+        int byte_ricevuti = recv(client_sock, buffer_risposta, strlen(ACK_NAME), 0);
+        buffer_risposta[byte_ricevuti] = '\0';
+        new_player->temi_punteggi[index_tema] = 0;
+
+        if(strcmp(buffer_risposta, ACK_NAME) == 0){
+                
+            NODE* domanda = tema_scelto->lista_domande;
+            //in caso si showscore rimanda l'ultima domanda non risposta
+            NODE* risposta = tema_scelto->lista_risposte;
+            
+            while (domanda != NULL) {
+                
+                send(client_sock, domanda->testo, Q_MAX, MSG_NOSIGNAL);
+                printf("Domanda: %s\n", domanda->testo); 
+
+                do{
+                    memset(buffer_risposta, A_MAX, 0);
+                    bytes_ricevuti = recv(client_sock, buffer_risposta, A_MAX, MSG_NOSIGNAL);
+                    
+                    if(bytes_ricevuti<= 0)
+                        continue;
+                    buffer_risposta[bytes_ricevuti] = '\0';
+                    
+                    strMinuscolo(risposta->testo);
+                    strMinuscolo(buffer_risposta);
+
+                    if(checkCommand(buffer_risposta)){
+                        printf("comando utente: %s\n", buffer_risposta );
+                        sendOrdScore(lista_player,num_giocatori, client_sock, &mutex_giocatori);
+                        break;
+                    }
+
+
+                    //controllo risposta corretta
+                    if(strcmp(buffer_risposta, risposta->testo) == 0) {
+                        //aumenta punteggio giocatore 
+                        new_player->temi_punteggi[index_tema]++;
+                        send(client_sock, ACK_NAME, strlen(ACK_NAME), MSG_NOSIGNAL);
+
+                        //la domanda avanza solo in caso di corretta risposta
+                        domanda = domanda->next;
+                        risposta = risposta->next;
+                        break;
+                    }
+                    else
+                        send(client_sock, NACK_NAME, strlen(NACK_NAME), MSG_NOSIGNAL);
+
+                }while (true);
+
+                //una volta usciti saranno finiti i temi
+                new_player->temi_finiti[index_tema] = true;
+            }
+            send(client_sock, EOQ, strlen(EOQ), MSG_NOSIGNAL);
+        }
 
     } while (true);
     
-
-
-    close(client_sock);
-    free(str_temi);
     free(arg);
-
 }
 
 
 int main(){
 
     //dichiaro il thread
-   
     int *arg;
     pthread_t thread_player;
     pthread_mutex_init(&mutex_giocatori,NULL);
@@ -132,7 +179,8 @@ int main(){
         perror("Errore: creazione del socket fallita\n");
         exit(EXIT_FAILURE);
     }
-
+    int option = 1;
+    setsockopt(serv_sock, SOL_SOCKET, SO_REUSEADDR, &(option), sizeof(option));
     //creazione indirizzo e porta associati al socket
     memset(&my_addr, 0, sizeof(my_addr));
     my_addr.sin_family = AF_INET;

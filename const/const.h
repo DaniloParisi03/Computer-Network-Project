@@ -13,15 +13,21 @@
 //lunghezza risposte
 #define A_MAX 30 
 
+#define BUFFER_SIZE NUM_THEME*NAME_MAX
 //dimensione del buffer utilizzato per show score
-#define SCOREBUFF_SIZE 1000 
+#define SCOREBUFF_SIZE ( NAME_MAX + 3 + (NUM_THEME / 10) )
 #define NAME_RESULT 20
 
 //ack e nack sul nome scelta dal client
 #define ACK_NAME "Risposta corretta"
-#define NACK_NAME "Risposta errata"
+#define NACK_NAME "Risposta errata  "
+
+//comandi utente
+#define SHOW_SCORE "showscore"
+#define END_QUIZ "endquiz"
 
 #define EOQ "domande terminate"
+#define STQ "inizio quiz terminati"
 
 #define bool _Bool
 #define false 0

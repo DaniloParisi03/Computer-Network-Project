@@ -29,9 +29,9 @@ NODE* caricaRiga(FILE *fd)
         
         //elimino il ritorno a capo alla fine della stringa
         str_riga[strcspn(str_riga, "\n")] = '\0';
-        char str_spazi_bianchi[Q_MAX];
 
-        //controlla di presenza di righe di soli spazi bianchi
+        char str_spazi_bianchi[Q_MAX];
+        //controlla e ignora di presenza di righe di soli spazi bianchi
         strncpy(str_spazi_bianchi, str_riga, Q_MAX-1);
         str_spazi_bianchi[strcspn(str_spazi_bianchi, " ")] = '\0';
 
@@ -158,102 +158,6 @@ bool caricaTemi(THEME *temi){
     return 1;
 }
 
-//gestione albero degli score
-
-TNODE* creaNodo(PLAYER* giocatore, int punteggio){
-    TNODE* new_node = (TNODE*)malloc(sizeof(TNODE));
-    new_node->giocatore = giocatore;
-    new_node->punteggio = punteggio;
-    new_node->left = NULL;
-    new_node->right = NULL;
-}
-
-void freeNodo(TNODE* nodo){
-    if(nodo == NULL)
-        return;
-
-    free(nodo);
-}
-
-void freeTree(TNODE* root) {
-
-    if (root == NULL) 
-        return;
-
-    freeTree(root->left);
-    freeTree(root->right);
-    freeNodo(root);
-}
-
-TNODE* trovaSuccessore(TNODE* padre ){
-
-    for (padre = padre->right; padre != NULL && padre->left != NULL; padre = padre->left);
-    return padre;
-}
-
-TNODE* trovaNodo(){
-
-    return NULL;
-}
-TNODE* inserisciPlayer(TNODE* node,  PLAYER *giocatore, int punteggio)
-{
-    if(node == NULL)
-        return creaNodo(giocatore,punteggio);
-
-    if(node->punteggio >= punteggio)
-        node->left = inserisciPlayer( node->left, giocatore, punteggio);
-
-    else
-        node->right = inserisciPlayer(node->right, giocatore, punteggio);
-    return node;
-}
-TNODE* rimuoviPlayer(TNODE *node, PLAYER *giocatore, int punteggio)
-{
-    if(node == NULL)
-        return node;
-        
-    if(node->punteggio >= punteggio && node->giocatore != giocatore)
-        node-> left = rimuoviPlayer( node->left, giocatore, punteggio);
-
-    else if(node->punteggio < punteggio && node->giocatore != giocatore)
-        node-> right = rimuoviPlayer(node->right, giocatore, punteggio);
-    
-
-    else if(node->punteggio == punteggio && node->giocatore == giocatore){
-        TNODE* temp_node;
-        if(node->left == NULL){
-            temp_node = node->right;
-            freeNodo(node);
-            return temp_node;
-        }
-
-        else if(node->right == NULL){
-            temp_node = node->left;
-            freeNodo(node);
-            return temp_node;
-        }
-
-        //ha entrambi i figli
-        else{
-
-            temp_node = trovaSuccessore(node);
-            node->punteggio = temp_node->punteggio;
-            node->giocatore = temp_node->giocatore;
-
-            node->right = rimuoviPlayer(node->right, giocatore, node->punteggio);
-        }
-    }
-    return node;
-
-}
-void stampaOrdinato(TNODE* root) {
-    if (root != NULL) {
-        stampaOrdinato(root->left);
-        printf("%s: (%d)\n ", root->giocatore->name, root->punteggio);
-        stampaOrdinato(root->right);
-    }
-}
-
 // lista utenti
 PLAYER* mallocGiocatore(char* nome){
 
@@ -265,7 +169,7 @@ PLAYER* mallocGiocatore(char* nome){
 
     for(int i = 0; i < NUM_THEME; i++){
         new_node->temi_finiti[i] = false;
-        new_node->temi_iniziati[i] = -1;
+        new_node->temi_punteggi[i] = -1;
     }
 
     new_node->next = NULL;
@@ -290,15 +194,16 @@ bool trovaUtenteDalNome(char* nomeGiocatore, PLAYER* lista_g, pthread_mutex_t* m
     return false;
 }
 
-PLAYER* aggiungiGiocatore(char* nome, PLAYER** lista_g, pthread_mutex_t* m){
+PLAYER* aggiungiGiocatore(char* nome, PLAYER** lista_g, int* num_players, pthread_mutex_t* m){
     
     PLAYER* new_node = mallocGiocatore(nome);
     pthread_mutex_lock(m);
 
     new_node->next = *(lista_g);
     *(lista_g) = new_node;
-
+    *(num_players)++;
     pthread_mutex_unlock(m);
+
     return new_node;
 
 }
@@ -336,28 +241,56 @@ int totStrTemiSize(THEME* temi){
     return size_all;
  }
 
- char* concatenaStrTemi(THEME* temi, const int size_all, PLAYER* client){
-
-    char buffer[100];
-    char* str_concatenata = (char*)malloc(size_all);
-
-    for(int i = 0 ; i < NUM_THEME; i++){
-
-        if(client->temi_finiti[i] == true)
-            continue;;
-        sprintf(buffer, "\n%d - ", (i+1));
-        
-        if(i==0)
-            strcpy(str_concatenata, buffer);
-        
-        else
-            strcat(str_concatenata, buffer);
-        strcat(str_concatenata, temi[i].name);
-
-    }
-
-    return str_concatenata;
-} 
-
 
 // comunicazione client
+bool checkCommand(char* buff){
+    return (strcmp(buff, SHOW_SCORE) == 0 ? true : false);
+}
+void sortUser(char* buff){
+    
+}
+int compare(const void* va, const void* vb)
+{
+    const PLAYER_ORD *a = va;
+    const PLAYER_ORD *b = vb;
+
+    if (a->punteggio != b->punteggio)
+        return b->punteggio - a->punteggio;      
+    return strcmp(a->name, b->name);
+}
+
+//per ogni tema ordina gli utenti in base al punteggio
+// prima manda i temi ordinati
+// poi manda INIZIO COMUNICAZIONE TEMI FINITI
+// utenti che hanno finito i temi 
+void sendOrdScore( PLAYER* lista_player, const int num_players, const int sock, pthread_mutex_t *m){
+
+    PLAYER_ORD utenti[num_players];
+    char score_buffer[SCOREBUFF_SIZE];
+    pthread_mutex_lock(m);
+    for (int itema = 0; itema < NUM_THEME; itema++)
+    {
+
+        int j = 0;
+        PLAYER* player = lista_player; 
+
+        while (player && j < num_players)
+        {   
+            strcpy(utenti[j].name, player->name);
+            utenti[j].punteggio = player->temi_punteggi[itema];
+
+            player = player->next;
+            j++;
+        }
+        
+    }
+    pthread_mutex_unlock(m);
+    
+    qsort(utenti, num_players, sizeof(PLAYER_ORD), compare);
+    
+    for (int k = 0; k < num_players; k++){
+        sprintf(score_buffer, sizeof(score_buffer),"- %s %d\n", utenti[k].name, (utenti[k].punteggio == -1) ? 0: utenti[k].punteggio );
+        send(sock, (void*)score_buffer, strlen(score_buffer), MSG_NOSIGNAL);
+    }
+   
+}
