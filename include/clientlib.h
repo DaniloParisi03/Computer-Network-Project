@@ -1,14 +1,18 @@
 #include "../include/all.h"
 #include "../const/const.h"
 
-typedef enum StatiUtente PLAYER_STATUS;
+typedef enum statiUtente PLAYER_STATUS;
+typedef enum statiRecv RECV_STATUS;
+
 typedef struct temi_quiz TEMI;
-enum StatiUtente{STARTPAGE, SCELTANOME, ATTIVO, SHOWSCORE, ENDQUIZ};
+enum statiUtente {STARTPAGE, SCELTANOME, ATTIVO, SHOWSCORE, ENDQUIZ};
+
+enum statiRecv { RECV_SCORE, RECV_QUESTION, RECV_END};
 
 struct temi_quiz{
 
     char nome[NAME_MAX];
-    bool attivo;
+    bool finito;
     uint16_t punteggio;
     
 };
@@ -21,9 +25,8 @@ TEMI temi[NUM_THEME];
 
 void printMenu();
 void recvAll(const int);
-bool recvRiga(const int sock, const int LEN_BUFFER);
+RECV_STATUS recvRiga(const int sock, const int LEN_BUFFER);
 PLAYER_STATUS sceltaMenu();
 PLAYER_STATUS richiediNome(const int);
-PLAYER_STATUS quiz(const int sock);
-void recvNomeTemaScelto(const int sock);
-void showScore();
+bool scegliTema(const int sock, int* i);
+void printTemi();

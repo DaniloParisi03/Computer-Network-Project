@@ -2,6 +2,7 @@
 #include "clientlib.c"
 
 PLAYER_STATUS my_status = STARTPAGE;
+int temi_todo = NUM_THEME;
 
 int main(int argc,const char *argv[]) 
 {
@@ -21,38 +22,49 @@ int main(int argc,const char *argv[])
     serv_addr.sin_addr.s_addr = INADDR_ANY;
 
     if(connect(sock, (struct sockaddr*)&serv_addr,sizeof(serv_addr)) == -1) {
-        printf("Error...\n");
+        printf("Errore nella connessione al server \n");
         exit(-1);
     }
 
-    //char strData[255];
-    //recv(sock, strData, sizeof(strData), 0);
-    //printf("Message: %s\n", strData);
 
     printMenu();
-    while (1)
+    while (true)
     {
         
         switch (my_status)
         {
-        case STARTPAGE:
-            my_status = sceltaMenu();
-            break;
+            case STARTPAGE:
+                my_status = sceltaMenu();
+                break;
 
-        case SCELTANOME:
-            my_status = richiediNome(sock);
-            break;
+            case SCELTANOME:
+                my_status = richiediNome(sock);
 
-        case ATTIVO:
-            my_status = quiz(sock);
-            break;
+                recvTemi(sock);
+                break;
 
-        case ENDQUIZ:
-            /* code */
-            return 0;
-            break;
-        default:
-            break;
+            case ATTIVO:
+            
+                int i = 0;
+                
+                
+                do
+                {
+                    printTemi();
+                    while (!scegliTema(sock, &i));
+                    my_status = quiz(sock,i);
+                    if(my_status == ENDQUIZ)
+                        break;
+                    
+                }while(temi_todo > 0);
+
+                break;
+
+            case ENDQUIZ:
+                close(sock);
+                return 0;
+                break;
+
         }
     }
     

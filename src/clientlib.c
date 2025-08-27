@@ -1,17 +1,52 @@
 #include "../include/clientlib.h"
-
+#include "../include/all.h"
+int temi_todo;
 void printMenu()
 {
-    printf("Trivia Quiz\n++++++++++++++++++++++++++++++ \nMenù:\n1 - Comincia una sessione di Trivia\n2 - Esci\n++++++++++++++++++++++++++++++\n");
+    system("clear");
+    printf("Trivia quiz\n");
+    printf("+++++++++++++++++++++++++++++++++++\n");
+    printf("Menù:\n");
+    printf("1 - Comincia una sessione di Trivia\n");
+    printf("2 - Esci\n");
+    printf("+++++++++++++++++++++++++++++++++++\n");
+    printf("La tua scelta: \n");
 }
-PLAYER_STATUS sceltaMenu()
-{
-    int scelta = -1;
+
+bool checkCommand(const char* buff){
+    return (strcmp(buff, SHOW_SCORE) == 0 || strcmp(buff, "show score") == 0) ? true : false;
+}
+void initTema(const int id, const char* nome, const int len_nome ){
+    strncpy(temi[id].nome, nome, len_nome);
+    temi[id].finito = false;
+    temi[id].punteggio = 0;
+}
+
+bool inputStr(char* buffer_in, const int size_buff){
+    if (fgets(buffer_in, size_buff, stdin) != NULL) 
+        {
+            size_t len = strlen(buffer_in);
+            if (len > 0 && buffer_in[len - 1] == '\n') 
+                buffer_in[len - 1] = '\0';
+            else
+            {
+                int ch;
+                while ((ch = getchar()) != '\n' && ch != EOF);
+            }
+            return true;
+        }
+        return false;
+}
+
+PLAYER_STATUS sceltaMenu(){
     
-    printf("La tua scelta:\n");
-    scanf("%d", &scelta); 
-        
-    switch (scelta)
+    char scelta[NUM_THEME];
+    if(!inputStr(scelta,NUM_THEME)){
+        printf("Errore nella recezione dell'input");
+        return ENDQUIZ;
+    }
+    int num_scelto = atoi(scelta);
+    switch (num_scelto)
     {
         case 1:
             return SCELTANOME;
@@ -22,179 +57,206 @@ PLAYER_STATUS sceltaMenu()
             break;
 
         default:
-        return ENDQUIZ;
+            return ENDQUIZ;
             break;
     }
-}
 
-bool checkCommand(char* buff){
-    return (strcmp(buff, SHOW_SCORE) == 0 ? true : false);
-}
-void initTema(const int id, const char* nome, const int len_nome ){
-    strncpy(temi[id].nome, nome, len_nome);
-    temi[id].attivo = false;
-    temi[id].punteggio = 0;
-}
-
-bool sendInput(const int sock, char* buffer_in, int SIZE_BUFFER){
-    char buffer_risultato[NAME_RESULT];
-    size_t len = 0;
-    do
-    {
-    
-        memset(buffer_in, 0, SIZE_BUFFER);
-        memset(buffer_risultato, 0, NAME_RESULT);
-
-        do{
-            fgets(buffer_in, NAME_MAX, stdin);
-            len = strlen(buffer_in);
-
-            if (len > 0 && buffer_in[len - 1] == '\n') {
-                buffer_in[len - 1] = '\0';
-            }
-
-        }while(strlen(buffer_in)==0);
-
-        buffer_in[strcspn(buffer_in, "\n")] = 0;
-        // Ricevi la risposta
-        
-        send(sock, buffer_in, strlen(buffer_in), 0);
-
-        if(checkCommand(buffer_in)){
-            //la forma dell'output è: "- nome punteggio" 
-            // while(recvRiga(sock, SCOREBUFF_SIZE));
-            return false;
-        }
-        
-        int byte_ricevuti = recv(sock, buffer_risultato, strlen(ACK_NAME),0);
-        buffer_risultato[byte_ricevuti] = '\0';
-
-        if (byte_ricevuti <= 0) {
-            printf("Connessione chiusa dal server\n");
-            return false;
-        }
-        printf("\n%s\n", buffer_risultato);
-
-        if(strcmp(buffer_risultato, ACK_NAME) == 0)
-            return true;
-        else
-            printf("\n[ERRORE]: %s\n", buffer_risultato);
-
-    } while (true);
 }
 
 PLAYER_STATUS richiediNome(const int sock){
-    
-    char buffer_nome[NAME_MAX];
-    char buffer_risultato[NAME_RESULT];
-    size_t len = 0;
-    printf("\nTrivia Quiz\n+++++++++++++++\n");
-    
-    printf("Scegli il nuo nickname (deve essere univoco)\n");
+    char nome_client[A_MAX];
+    char ret_serv[strlen(ACK_NAME)+1];
+    int ret;
 
-    if(!sendInput(sock,buffer_nome,NAME_MAX))
-        return ENDQUIZ;
+    do{
+            memset(ret_serv,0, strlen(ACK_NAME));
+            memset(nome_client,0,A_MAX);
 
-    return ATTIVO;
+            printf("Scegli  nickname\n");
+            inputStr(nome_client, NAME_MAX);
+
+            if(strcmp(nome_client, "") == 0)
+            {
+                printf("Nickname non valido, inserire almeno un carattere\n");
+                continue;
+            }
+
+            if(checkCommand(nome_client))
+                break;
+                //mostra_classifica(sock);
+
+            
+            //comando endquiz
+            else if(strcmp(nome_client, END_QUIZ) == 0)
+                return ENDQUIZ;
+
+            // invio nel nome al server
+            else
+            {
+                //invio del nickname
+                if(send(sock, nome_client, NAME_MAX, MSG_NOSIGNAL) == -1){
+                    perror("Errore invio nickname");
+                    return ENDQUIZ;
+                }
+
+                ret = recv(sock, ret_serv, strlen(ACK_NAME),0);
+                if (ret <= 0) {
+                    perror("Errore ricezione ACK");
+                    return ENDQUIZ;
+                }
+                ret_serv[ret] = '\0';
+                printf("risposta server: %s\n",ret_serv);
+                
+                if(strcmp(ret_serv, ACK_NAME) == 0){
+                    printf("\nNickname Valido\n");
+                    return  ATTIVO;
+                }
+                    
+                else
+                    printf("\nNickname già preso\n");
+            }
+        } while (true);
+    
 }
 
-void recvAll(const int sock){
-    char nome[NAME_MAX];
-    char riga[NAME_MAX + 20];
+void recvTemi(const int sock){
+    int ret;
+    char ret_serv[NAME_MAX];
+
     for(int i = 0; i < NUM_THEME; i++)
+        {
+            if((ret = recv(sock, (void*)ret_serv, NAME_MAX, 0)) <= 0)
+                break;
+            ret_serv[ret]  = '\0';
+            initTema(i,ret_serv,strlen(ret_serv));
+        }
+}
+
+void printTemi(){
+    printf("\nQuiz disponibili\n");
+    printf("+++++++++++++++++++++++++++++++++++\n");
+
+    for(int i = 0; i < NUM_THEME; i++)
+        if(temi[i].finito == false )
+            printf( "%d - %s \n", i+1, temi[i].nome);
+    
+    printf("+++++++++++++++++++++++++++++++++++\n");
+
+}
+
+
+bool scegliTema(const int sock, int* i){
+    char ret_serv[NAME_MAX];
+    char tema_id[A_MAX];
+    uint32_t tema_scelto;
+    do
     {
-        ssize_t ret = recv(sock, (void*)nome, NAME_MAX, 0);
-        nome[ret] = '\0';
+        printf("La tua scelta:\n");
+        inputStr(tema_id, A_MAX);
+
+        if(checkCommand(tema_id))
+            break; //mostra_classifica(sock);
+
+            
+        else if(strcmp(tema_id, END_QUIZ) == 0)
+            return -1;
+
+        tema_scelto = atoi(tema_id);
+        tema_scelto--;
+        if(tema_scelto < 0 || tema_scelto >= NUM_THEME)
+        printf("\nTema non valido\n"); 
         
-        initTema(i, nome,ret);
-
-        snprintf(riga, sizeof(riga), "\n%d - %s ", i+1, nome);
-        strncat(tabellone_temi, riga, BUFFER_SIZE - strlen(tabellone_temi) - 1);    
-     }
-}
-
-void recvTema(const int sock){
-
-    char nome[NAME_MAX];
-    ssize_t ret = recv(sock, (void*)nome, NAME_MAX, 0);
-    nome[ret] = '\0';
+        else if(temi[tema_scelto].finito){
+            printf("\nTema già terminato, scegliene un altro\n"); 
+            continue;
+        }
+        
+        else
+        break;
+        
+    } while (true);
     
-    printf("Quiz - %s\n", nome);
-    printf("++++++++++++++++++++++++++++++\n");
-
-    send(sock, ACK_NAME, strlen(ACK_NAME),MSG_NOSIGNAL);
-    
-}
-bool recvRiga(const int sock, const int LEN_BUFFER){
-    
-    char buffer_recv[LEN_BUFFER];
-    memset(buffer_recv, 0, LEN_BUFFER);
-    
-    ssize_t ret = recv(sock, buffer_recv, LEN_BUFFER, 0);
-    
-    if (ret <= 0){
-        perror("recv non funzionante");
-        exit(EXIT_FAILURE);
-    }
-    
-    buffer_recv[ret] = '\0';  
-    printf("%s\n", buffer_recv);
-
-    if(strcmp(buffer_recv,EOQ) == 0)
-        return false;
-    
+    uint32_t tema_net = htonl(tema_scelto);
+    *i = tema_scelto;
+    send(sock, &tema_net, sizeof(tema_net), MSG_NOSIGNAL);
+    printf("tema %d\n", tema_scelto);
+    printf("\nQuiz - %s\n", temi[tema_scelto].nome);
     return true;
 
-
-}
-int sendTemaScelto(const int sock){
-
-    uint32_t tema_in, tema_out;
-    ssize_t bytes_inviati;
-
-    printf("Quiz disponibili\n");
-    printf("++++++++++++++++++++++++++++++\n");
-
-    printf("%s\n", tabellone_temi);
-    printf("++++++++++++++++++++++++++++++\n");
-
-    printf("La tua scelta:\n");
-    
-    do{
-        scanf("%d", &tema_in);
-    }while (tema_in <= 0 || tema_in > NUM_THEME);
-
-    tema_out = htonl(tema_in);
-
-    bytes_inviati = send(sock, &tema_out, sizeof(tema_in), 0);
-    if (bytes_inviati != sizeof(tema_out)) {
-        perror("Errore nell'invio del tema");
-        exit(EXIT_FAILURE);
-    }
-    return tema_in;
 }
 
-PLAYER_STATUS quiz(const int sock){
+PLAYER_STATUS quiz(const int sock,const int tema_scelto){
     
-    char riposta[A_MAX];
-
-    recvAll(sock);
+    char risposta[A_MAX];
+    char ret_serv[Q_MAX];
+    int ret;
+    RECV_STATUS comunication_status = RECV_QUESTION;
     u_int32_t tema_index = 0;
-    do{
-        tema_index = sendTemaScelto(sock);
-        recvTema(sock);
-        temi[tema_index].attivo = true;
-        
-        while(recvRiga(sock, Q_MAX)){
-            memset(riposta,0,A_MAX);
 
-            if(sendInput(sock, riposta, A_MAX)){
-                temi[tema_index].punteggio++;
+    while(true)
+    {
+        memset(ret_serv, 0, Q_MAX);
+        //ricezione della domanda
+        if((ret = recv(sock, ret_serv, Q_MAX, 0)) <= 0)
+            break;
+
+        if(strcmp(ret_serv,EOQ) == 0)
+                break;
+        //si esce da questo ciclo quando viene inserita una risposta alla domanda
+        do
+        {
+            printf("+++++++++++++++++++++++++++++++++++\n");
+            printf("%s\n\n", ret_serv);
+            
+            //inserimento della risposta
+            printf("Risposta:\n");
+            inputStr(risposta, A_MAX);
+
+            if(strcmp(risposta, "") == 0)
+            {
+                printf("Risposta vuota\n");
+                continue;
             }
+
+            if(checkCommand(risposta))
+                break; //mostra_classifica(sock);
+
+            
+            //comando endquiz
+            else if(strcmp(risposta, END_QUIZ) == 0)
+                return ENDQUIZ;
+
+            else
+                break;
+            
+            
+        } while (true);
+        
+        //invio della risposta alla domanda
+        if(send(sock, (void*)risposta, A_MAX, MSG_NOSIGNAL) == -1)
+            return ENDQUIZ;
+
+        ret = recv(sock, ret_serv, strlen(ACK_NAME),0);
+        if (ret <= 0) {
+            perror("Errore ricezione ACK");
+            return ENDQUIZ;
         }
+        ret_serv[ret] = '\0';
+        printf("ritorno: %s\n", ret_serv);
+        //ricezione dell'esito
+        if(strcmp(ret_serv,ACK_NAME) == 0)
+            continue;
 
-        temi[tema_index].attivo = false;
-    }while(true);
+        else
+            printf("\nRisposta errata: %s\n", ret_serv);
+        
+    }
 
-    return ENDQUIZ;
+    printf("+++++++++++++++++++++++++++++++++++\n");
+    printf("Quiz %s completato\n", temi[tema_scelto].nome);
+
+    temi[tema_scelto].finito = true;
+    temi_todo--;
+
+    return ATTIVO;
 }

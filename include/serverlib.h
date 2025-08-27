@@ -6,6 +6,9 @@ typedef struct theme THEME;
 typedef struct node NODE; 
 typedef struct player PLAYER;
 typedef struct player_ord PLAYER_ORD;
+typedef enum status_cl STATO_CLIENT;
+
+enum status_cl{SCELTANOME, INVIA_TABELLONE, DOMANDE, SHOWSCORE, ENDQUIZ};
 
 struct node{
     char testo[Q_MAX];
@@ -51,7 +54,7 @@ void strMinuscolo(char* str);
 
 //
 
-bool caricaDomande(size_t , THEME *);
+bool caricaDomande(size_t num, THEME * tema);
 bool caricaRisposte(size_t num_tema, THEME* lista_domande);
 
 bool caricaTemi(THEME* temi);
@@ -59,26 +62,21 @@ bool caricaTemi(THEME* temi);
 //la domanda deve essere univoca per essere inserita
 // +1 inserito correttamente , 0 se non inserito, -1 se già presente
 
-void stampa_menu(THEME *lista_temi, PLAYER* giocatori, int giocatore_attuali ,pthread_mutex_t* m );
+void stampa_menu();
 
 // funzioni per la gestione dei giocatori
 
-bool trovaUtenteDalNome(char* nome, PLAYER* lista_g, pthread_mutex_t* m);
-PLAYER* aggiungiGiocatore(char* giocatore, PLAYER** lista_g, int* num_players, pthread_mutex_t* m);
-PLAYER* mallocGiocatore(char* nome);
-
-//gestione tramite albero di ricerca per una question di complessità, ovvero 
-//ordinandno ogni volta un array complessità n*log(n), 
-//così la: 2*O(log(n)) + O(n) e la stampa sarà O(n)
+PLAYER* trovaUtenteDalNome(const char* nome);
+PLAYER* aggiungiGiocatore(const char* giocatore);
+PLAYER* mallocGiocatore(const char* nome);
 
 
-PLAYER* addScore(int* player, pthread_mutex_t* m);
 
 
 int totStrTemiSize(THEME* temi);
 char* concatenaStrTemi(THEME* temi, const int size_all, PLAYER* client);
-char* concatenaStrClassifica(THEME* temi, const int size_all);
 
-bool checkCommand(char* buff);
-void sortUser(char* lista_utenti);
-void sendOrdScore( PLAYER* lista_player, const int num_players, const int sock, pthread_mutex_t *m);
+bool checkCommand(const char* buff);
+void sendOrdScore(const int sock);
+void sendOrdScore( const int sock);
+STATO_CLIENT assegnaNome(PLAYER** new_player, const int sock);

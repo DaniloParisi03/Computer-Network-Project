@@ -1,10 +1,18 @@
 #include "../include/serverlib.h"
 
+extern THEME temi[NUM_THEME]; 
+extern PLAYER* lista_player;
+extern pthread_mutex_t m;
+extern int num_giocatori;
+
 void trimStr(char* str){
+    if(!str)
+        return;
+
     char* temp = str;
     do {
         while (*temp == ' ') {
-            ++temp;
+            temp++;
         }
     } while (*str++ = *temp++);
 }
@@ -91,7 +99,7 @@ bool caricaDomande(size_t num_tema, THEME *tema)
     fd = fopen(file_name, "r"); 
     if (!fd) {
         perror("Errore nell'apertura di domande.txt: ");
-        return 1;
+        return false;
     }
 
     tema->lista_domande = caricaRiga(fd);
@@ -133,7 +141,7 @@ bool caricaTemi(THEME *temi){
 
     if (!fd) {
         perror("Errore nell'apertura di temi.txt\n");
-        return 1;
+        return false;
     }
     
     for(size_t i= 0; i< NUM_THEME && fgets(tema_nome, sizeof(tema_nome), fd) != NULL; i++) {
@@ -144,70 +152,96 @@ bool caricaTemi(THEME *temi){
         new_tema = &temi[i];
         //@todo #6 i nomi dei temi andranno liberati alla fine
         new_tema->name = strdup(tema_nome);
+        if (!new_tema->name) { 
+            perror("strdup fallita"); 
+            fclose(fd);
+            return false; 
+            }
 
+
+        new_tema->lista_domande = NULL;
+        new_tema->lista_risposte = NULL;
+
+        new_tema->NUM_DOMANDE = 0; 
         if (new_tema->name == NULL) {
             perror("strdup fallita");
             return 0;
         }
         
+        caricaRisposte(i, new_tema);
         caricaDomande(i,new_tema);
-        caricaRisposte(i,new_tema);
+        
+        // NODE* nodo = new_tema->lista_domande;
+
+        // for (; nodo != NULL; nodo = nodo->next) {
+        //     printf("%s\n", nodo->testo);
+
+        // }
+        // nodo = new_tema->lista_risposte;
+
+        // for (; nodo != NULL; nodo = nodo->next) {
+        //     printf("%s\n", nodo->testo);
+            
+        // }
     }
     
     fclose(fd);
-    return 1;
+    return true;
 }
 
 // lista utenti
-PLAYER* mallocGiocatore(char* nome){
-
+PLAYER* mallocGiocatore(const char* nome){
     PLAYER* new_node = (PLAYER*)malloc(sizeof(PLAYER));
-    strcpy(new_node->name,nome);
-
-    //new_node->name[NAME_MAX - 1] = '\0'; 
+    if (!new_node) { 
+        perror("errore malloc"); 
+        return NULL; 
+    }
+    strncpy(new_node->name, nome, NAME_MAX-1);
+    new_node->name[NAME_MAX-1] = '\0';
     new_node->attivo = true;
-
+    //inzialmente ogni giocatore avrà nessun tema finito 
+    //è niente punteggi
     for(int i = 0; i < NUM_THEME; i++){
         new_node->temi_finiti[i] = false;
-        new_node->temi_punteggi[i] = -1;
+        new_node->temi_punteggi[i] = 0;
     }
 
     new_node->next = NULL;
+
     return new_node;
 
 }
 
-bool trovaUtenteDalNome(char* nomeGiocatore, PLAYER* lista_g, pthread_mutex_t* m){
+PLAYER* trovaUtenteDalNome(const char* nomeGiocatore){
     
-    pthread_mutex_lock(m);
+    pthread_mutex_lock(&m);
     
-    for (PLAYER* p = lista_g; p != NULL;  p = p->next)
+    for (PLAYER* p = lista_player; p != NULL;  p = p->next)
     {
         //@todo scegli una condizione tra le due
         if(strcmp(p->name,nomeGiocatore) == 0){
-            pthread_mutex_unlock(m);
-            return true;
+            pthread_mutex_unlock(&m);
+            return p;
         }
     }
     
-    pthread_mutex_unlock(m);
-    return false;
+    pthread_mutex_unlock(&m);
+    return NULL;
 }
 
-PLAYER* aggiungiGiocatore(char* nome, PLAYER** lista_g, int* num_players, pthread_mutex_t* m){
+PLAYER* aggiungiGiocatore(const char* nome){
     
     PLAYER* new_node = mallocGiocatore(nome);
-    pthread_mutex_lock(m);
-
-    new_node->next = *(lista_g);
-    *(lista_g) = new_node;
-    *(num_players)++;
-    pthread_mutex_unlock(m);
+    pthread_mutex_lock(&m);
+    new_node->next = lista_player;
+    lista_player = new_node;
+    num_giocatori++;
+    pthread_mutex_unlock(&m);
 
     return new_node;
 
 }
-void stampa_menu(THEME* lista_temi,PLAYER* giocatori, int giocatore_attuali, pthread_mutex_t *m)
+void stampa_menu()
 {
 
     printf("Trivia Quiz\n");
@@ -216,15 +250,14 @@ void stampa_menu(THEME* lista_temi,PLAYER* giocatori, int giocatore_attuali, pth
 
     for (int i = 0; i< NUM_THEME; i++ )
     {
-        printf("%d - %s\n", i, lista_temi[i].name);
+        printf("%d - %s\n", i+1, temi[i].name);
     }
     printf("+++++++++++++++++++++++++\n");
     
-    printf("\nPartecipanti (%d)\n", giocatore_attuali);
-    for (PLAYER* giocatore = giocatori; giocatore != NULL; giocatore = giocatore->next)
+    printf("\nPartecipanti (%d)\n", num_giocatori);
+    for (PLAYER* giocatore = lista_player; giocatore != NULL; giocatore = giocatore->next)
     {
         printf("- %s\n",  giocatore->name);
-
     }
     
 }
@@ -243,11 +276,8 @@ int totStrTemiSize(THEME* temi){
 
 
 // comunicazione client
-bool checkCommand(char* buff){
-    return (strcmp(buff, SHOW_SCORE) == 0 ? true : false);
-}
-void sortUser(char* buff){
-    
+bool checkCommand(const char* buff){
+    return (strcmp(buff, SHOW_SCORE) == 0 || strcmp(buff, END_QUIZ) == 0) ? true : false;
 }
 int compare(const void* va, const void* vb)
 {
@@ -263,34 +293,102 @@ int compare(const void* va, const void* vb)
 // prima manda i temi ordinati
 // poi manda INIZIO COMUNICAZIONE TEMI FINITI
 // utenti che hanno finito i temi 
-void sendOrdScore( PLAYER* lista_player, const int num_players, const int sock, pthread_mutex_t *m){
 
-    PLAYER_ORD utenti[num_players];
+void sendOrdScore(const int sock){
+
+    
+    PLAYER_ORD utenti[num_giocatori];
     char score_buffer[SCOREBUFF_SIZE];
-    pthread_mutex_lock(m);
+    
+    pthread_mutex_lock(&m);
+    int nplayers = num_giocatori;
+    pthread_mutex_unlock(&m);
+
+    uint32_t punteggio;
+
     for (int itema = 0; itema < NUM_THEME; itema++)
     {
 
+        memset(score_buffer, 0,SCOREBUFF_SIZE);
         int j = 0;
-        PLAYER* player = lista_player; 
+        
+        pthread_mutex_lock(&m);
+        for (PLAYER* player = lista_player;  player!= NULL && j < nplayers; player = player->next, j++)
+        {
 
-        while (player && j < num_players)
-        {   
-            strcpy(utenti[j].name, player->name);
+            strncpy(utenti[j].name, player->name, NAME_MAX);
             utenti[j].punteggio = player->temi_punteggi[itema];
 
-            player = player->next;
-            j++;
         }
+        pthread_mutex_unlock(&m);
         
+        qsort(utenti, j, sizeof(PLAYER_ORD), compare);
+        int size = snprintf(score_buffer, SCOREBUFF_SIZE, "Punteggio tema %d\n" ,itema+1);
+        printf("Punteggio tema %d\n" ,itema+1);
+        // send(sock, score_buffer, strlen(score_buffer), MSG_NOSIGNAL);
+
+        for (int k = 0; k < nplayers; k++){
+
+
+            punteggio = (utenti[k].punteggio == 0) ? 0: utenti[k].punteggio ;
+            printf("- %s: %d\n", utenti[k].name, utenti[k].punteggio );
+
+            size += snprintf(score_buffer, SCOREBUFF_SIZE,"- %s %d\n", utenti[k].name, punteggio);
+            // send(sock, score_buffer, strlen(score_buffer), MSG_NOSIGNAL);
+        }
+
     }
-    pthread_mutex_unlock(m);
-    
-    qsort(utenti, num_players, sizeof(PLAYER_ORD), compare);
-    
-    for (int k = 0; k < num_players; k++){
-        sprintf(score_buffer, sizeof(score_buffer),"- %s %d\n", utenti[k].name, (utenti[k].punteggio == -1) ? 0: utenti[k].punteggio );
-        send(sock, (void*)score_buffer, strlen(score_buffer), MSG_NOSIGNAL);
-    }
+    send(sock, EOS, strlen(EOS), MSG_NOSIGNAL); 
+    printf(" FINE SEND ORD, num player %d\n", nplayers );
+
+
+}
    
+void stampaListaGiocatori(){
+    PLAYER* player = lista_player; 
+
+        while (player!= NULL)
+        {   
+            printf("- %s: %d\n", player->name, player->temi_punteggi[1] );    
+            player= player->next;
+        }
+
+}
+
+STATO_CLIENT assegnaNome(PLAYER** new_player , const int sock){
+    char buffer_nome[NAME_MAX];
+    int ret;
+
+    do
+    {
+        memset(buffer_nome, 0, NAME_MAX);
+        ret = recv(sock, buffer_nome, NAME_MAX-1, 0);
+
+        if (ret <= 0)
+           return ENDQUIZ; 
+
+        buffer_nome[ret] = '\0';
+
+        //trimStr(buffer_nome);
+
+        //stringa vuota    
+        if(strlen(buffer_nome) == 0)
+            continue;
+
+        strMinuscolo(buffer_nome);
+        printf("\nUtente propone %s\n", buffer_nome);
+
+        if(trovaUtenteDalNome(buffer_nome) == NULL){
+            //invio ack per indicare la correttezza del nome
+            send(sock, ACK_NAME, strlen(ACK_NAME), 0);
+            *(new_player) = aggiungiGiocatore(buffer_nome);
+            break;
+        }
+
+        else 
+            send(sock, NACK_NAME, strlen(NACK_NAME), 0);
+    } 
+    while (true);
+
+    return INVIA_TABELLONE;
 }
