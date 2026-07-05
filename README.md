@@ -1,4 +1,4 @@
-# 🎮 Multithreaded TCP Trivia Game
+# Multithreaded TCP Trivia Game
 
 > **Bachelor's Degree Project** — *Computer Networks Course (Reti Informatiche / Reti di Calcolatori)*
 
@@ -9,7 +9,7 @@
 
 ---
 
-## 📖 Overview
+## Overview
 
 This repository contains the implementation of a **Multithreaded Client-Server Trivia Quiz Game** written in **C** using **POSIX Sockets** and **POSIX Threads (`pthreads`)**. 
 
@@ -17,17 +17,17 @@ The project demonstrates fundamental networking and operating system concepts, i
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-- **🌐 TCP Client-Server Architecture**: Reliable connection-oriented communication over TCP (default port `3456`).
-- **🔀 Concurrent Multi-Client Handling**: Spawns a dedicated POSIX thread (`pthread_create`) for each incoming client connection, allowing multiple players to connect and play simultaneously without blocking the main server loop.
-- **📂 Dynamic File-Based Trivia Loading**: Automatically loads quiz categories, questions, and answers from text files into dynamically allocated singly linked lists at server startup.
-- **🔒 Thread-Safe State Management**: Utilizes POSIX mutexes (`pthread_mutex_t`) to prevent race conditions when accessing shared resources, such as global player lists and score leaderboards.
-- **🏆 Player & Score Tracking**: Comprehensive data structures to track player sessions, active/completed themes, and dynamic leaderboard rankings.
+- **TCP Client-Server Architecture**: Reliable connection-oriented communication over TCP (default port `3456`).
+- **Concurrent Multi-Client Handling**: Spawns a dedicated POSIX thread (`pthread_create`) for each incoming client connection, allowing multiple players to connect and play simultaneously without blocking the main server loop.
+- **Dynamic File-Based Trivia Loading**: Automatically loads quiz categories, questions, and answers from text files into dynamically allocated singly linked lists at server startup.
+- **Thread-Safe State Management**: Utilizes POSIX mutexes (`pthread_mutex_t`) to prevent race conditions when accessing shared resources, such as global player lists and score leaderboards.
+- **Player & Score Tracking**: Comprehensive data structures to track player sessions, active/completed themes, and dynamic leaderboard rankings.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 Computer-Network-Project/
@@ -54,7 +54,7 @@ Computer-Network-Project/
 
 ---
 
-## ⚙️ Architecture & Data Structures
+## Architecture & Data Structures
 
 The application relies on several core data structures defined in `include/serverlib.h`:
 
@@ -77,7 +77,7 @@ A dynamic linked list node used for storing variable-length quiz content in memo
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 To compile and run this project, you need a POSIX-compatible environment (Linux, macOS, or Windows via WSL/MSYS2) with:
@@ -85,7 +85,7 @@ To compile and run this project, you need a POSIX-compatible environment (Linux,
 - **Make**
 - **POSIX Threads & Sockets support**
 
-### 🔨 Compilation
+### Compilation
 
 A `makefile` is provided for easy build automation. Open your terminal in the project root directory and run:
 
@@ -106,7 +106,7 @@ make cls
 
 ---
 
-## 🕹️ Running the Application
+## Running the Application
 
 ### 1. Start the Server
 Start the server first. It will bind to `127.0.0.1:3456`, load the trivia questions from the `txt/` directory into memory, and begin listening for client connections:
@@ -129,7 +129,7 @@ In a separate terminal window (or multiple windows for concurrent players), laun
 
 ---
 
-## 🛠️ Current Status & Roadmap
+## Current Status & Roadmap
 
 This project is currently in active development as part of a university coursework submission:
 - [x] **Server Core**: Socket creation, TCP binding, listening, and accept loop.
@@ -141,7 +141,7 @@ This project is currently in active development as part of a university coursewo
 
 ---
 
-## 👤 Author
+## Author
 
 **Danilo Parisi**
 - GitHub: [@DaniloParisi03](https://github.com/DaniloParisi03)
