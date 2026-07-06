@@ -129,19 +129,4 @@ In a separate terminal window (or multiple windows for concurrent players), laun
 
 ---
 
-## Current Status & Roadmap
 
-This project is currently in active development as part of a university coursework submission:
-- [x] **Server Core**: Socket creation, TCP binding, listening, and accept loop.
-- [x] **Concurrency**: Worker thread creation per connected client with mutex initialization.
-- [x] **Data Persistence & Parser**: Robust text file parser stripping whitespace and loading questions/answers into linked lists.
-- [ ] **Game Loop & Protocol**: Implementing full client-server message exchange inside `th_client`.
-- [ ] **Client CLI**: Interactive terminal user interface for selecting themes and answering questions.
-- [ ] **Leaderboard System**: Finalizing score calculation and ranking algorithms (`ord` & `aggiornaPunteggio`).
-
----
-
-## Author
-
-**Danilo Parisi**
-- GitHub: [@DaniloParisi03](https://github.com/DaniloParisi03)
